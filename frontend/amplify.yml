@@ -1,0 +1,18 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - cd frontend
+        - npm install
+    build:
+      commands:
+        - npm run build
+  artifacts:
+    # The base directory for your built files. For create-react-app, this is usually "build".
+    baseDirectory: build
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*  
