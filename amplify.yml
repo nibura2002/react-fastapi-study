@@ -3,7 +3,7 @@ frontend:
   phases:
     preBuild:
       commands:
-        - cd frontend
+        - cd frontend/gpt-chat
         - npm install
     build:
       commands:
