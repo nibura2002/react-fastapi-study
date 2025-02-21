@@ -187,3 +187,4 @@ This project is licensed under the [MIT License](LICENSE).
 - [LangChain](https://github.com/hwchase17/langchain)
 - [AWS Amplify](https://aws.amazon.com/amplify/)
 - [OpenAI](https://openai.com/)
+
