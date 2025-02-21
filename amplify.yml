@@ -10,7 +10,7 @@ frontend:
         - npm run build
   artifacts:
     # The base directory for your built files. For create-react-app, this is usually "build".
-    baseDirectory: build
+    baseDirectory: frontend/gpt-chat/build
     files:
       - '**/*'
   cache:
