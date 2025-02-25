@@ -102,89 +102,113 @@ This repository is created for learning web application development. It contains
 
 ---
 
-## AWS Deployment
+# AWS Amplify Deployment Guide (by LLM)
 
-This project is designed to be deployed on AWS using a serverless stack (Amplify + Lambda + Cognito). Below is an outline of the deployment steps.
+This guide explains how to deploy the chat application using AWS Amplify and AWS Lambda.
 
-### 1. Initialize an Amplify Project
+## Frontend Deployment with AWS Amplify
 
-Run the following command from the root or frontend directory:
-```bash
-amplify init
+1. **Connect your repository to AWS Amplify**:
+   - Log in to the AWS Management Console
+   - Navigate to AWS Amplify
+   - Click "Create app" > "Host web app"
+   - Choose your Git provider and connect your repository
+   - Select the branch to deploy
+
+2. **Configure build settings**:
+   - Amplify will auto-detect React settings, but verify the build settings:
+
+   ```yaml
+   version: 1
+   frontend:
+     phases:
+       preBuild:
+         commands:
+           - npm install
+       build:
+         commands:
+           - npm run build
+     artifacts:
+       baseDirectory: build
+       files:
+         - '**/*'
+     cache:
+       paths:
+         - node_modules/**/*
+   ```
+
+3. **Set environment variables**:
+   - Go to App settings > Environment variables
+   - Add `REACT_APP_API_URL` pointing to your API Gateway URL (after backend deployment)
+
+## Backend Deployment to AWS Lambda
+
+1. **Create the Lambda function**:
+   - Navigate to AWS Lambda
+   - Create a new function
+   - Choose Python 3.9+ as the runtime
+   - Create a new role with basic Lambda permissions
+
+2. **Deploy the code**:
+   - Package the code:
+     ```
+     pip install -r requirements.txt --target ./package
+     cp main.py ./package/
+     cd package
+     zip -r ../deployment-package.zip .
+     ```
+   - Upload the deployment package to Lambda
+
+3. **Add required permissions to Lambda role**:
+   - Add SSM parameter read permissions to access the API key
+
+4. **Configure API Gateway**:
+   - Create a new API Gateway (HTTP API)
+   - Add routes:
+     - POST /api/chat -> Your Lambda function
+     - GET /api/health -> Your Lambda function
+   - Enable CORS for your Amplify domain
+
+5. **Store secrets**:
+   - In AWS Systems Manager Parameter Store:
+     - Create a secure string parameter `/chatbot/OPENAI_API_KEY` with your OpenAI API key
+
+## Required Dependencies
+
+**Backend (add to requirements.txt)**:
 ```
-Follow the interactive prompts to set your project name, environment (dev/prod), and AWS region.
-
-### 2. Add Authentication (Cognito)
-
-Add authentication using AWS Cognito:
-```bash
-amplify add auth
-```
-Follow the prompts to set up a user pool and configure options such as email/password authentication and social logins if needed.
-
-### 3. Add the Backend API (Lambda Function)
-
-1. **Add a Lambda function** for your backend:
-   ```bash
-   amplify add function
-   ```
-   Choose Python as the runtime and configure your function to use the code from `backend/main.py` (with the necessary adjustments for AWS Lambda).
-
-2. **Add a REST API endpoint:**
-   ```bash
-   amplify add api
-   ```
-   Choose REST and configure the endpoint (e.g., `/api/chat/stream`) to trigger the Lambda function.
-
-### 4. Set Environment Variables
-
-Set any required environment variables (e.g., `OPENAI_API_KEY`) for your Lambda function via the Amplify Console or CLI.
-
-### 5. Deploy the Backend
-
-Deploy all backend resources to AWS:
-```bash
-amplify push
+fastapi==0.110.0
+uvicorn==0.28.0
+langchain==0.1.14
+langchain-openai==0.0.8
+python-dotenv==1.0.1
+pydantic==2.6.1
+mangum==0.17.0
+boto3==1.34.21
 ```
 
-### 6. Deploy the Frontend
+**Special backend package for AWS Lambda**:
+- Mangum: Adapter for running ASGI applications like FastAPI in AWS Lambda
 
-1. **Add hosting** for your frontend:
-   ```bash
-   amplify add hosting
-   ```
-2. **Publish the app:**
-   ```bash
-   amplify publish
-   ```
-After deployment, update your frontend API URLs (in `aws-exports.js` or directly in your code) to point to the production API Gateway endpoint.
+## Monitoring and Debugging
 
----
+1. **Check CloudWatch Logs**:
+   - Lambda logs will be in CloudWatch
+   - Enable detailed logging by setting appropriate log levels
 
-## Additional Information
+2. **Set up CloudWatch Alarms**:
+   - Monitor Lambda errors and latency
+   - Create alarms for when error rates exceed thresholds
 
-- **LangChain Version Notes:**  
-  Check the documentation for the version of LangChain you are using, as APIs may change.
+## Further Optimizations
 
-- **Module Organization:**  
-  Ensure that `callback_handler.py` is located in the same directory as `main.py`. Adjust import paths if you restructure the project.
+1. **Add CloudFront CDN**:
+   - Automatically configured with Amplify
 
-- **Security:**  
-  For production, ensure proper CORS configuration, IAM role assignments, and use Cognito to restrict API access to authenticated users only.
+2. **Consider Cognito Authentication**:
+   - Add user authentication if needed
+   - Update CORS settings accordingly
 
----
-
-## License
-
-This project is licensed under the [MIT License](LICENSE).
-
----
-
-## Acknowledgements
-
-- [FastAPI](https://fastapi.tiangolo.com/)
-- [React](https://reactjs.org/)
-- [LangChain](https://github.com/hwchase17/langchain)
-- [AWS Amplify](https://aws.amazon.com/amplify/)
-- [OpenAI](https://openai.com/)
-
+3. **Optimize Lambda Cold Starts**:
+   - Use Provisioned Concurrency for the Lambda function
+   - Minimize dependencies in the deployment package
