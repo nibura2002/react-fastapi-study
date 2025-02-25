@@ -54,7 +54,7 @@ const ModernChatBot = () => {
   // Get the API URL from environment variables or use a default
   // For local development, create a .env file with REACT_APP_API_URL
   // For Amplify, configure environment variables in the Amplify Console
-  const API_URL = process.env.REACT_APP_API_URL || 'https://your-api-gateway-url.execute-api.region.amazonaws.com/prod/chat';
+  const API_URL = process.env.REACT_APP_API_URL || 'https://oialaa0tni.execute-api.us-east-1.amazonaws.com/prod/api/chat';
   
   const handleSendMessage = async () => {
     if (inputText.trim() === '') return;

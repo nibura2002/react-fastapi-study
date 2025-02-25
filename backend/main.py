@@ -55,7 +55,7 @@ app.add_middleware(
         "http://localhost:3000",
         "https://localhost:3000",
         "https://*.amplifyapp.com",  # Wildcard for Amplify domains
-        "https://your-domain-name.com"  # Add your custom domain if you have one
+        "https://main.d36k5jehix1qrw.amplifyapp.com"  # Add your custom domain if you have one
     ],
     allow_credentials=True,
     allow_methods=["*"],
