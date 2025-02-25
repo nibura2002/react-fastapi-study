@@ -219,7 +219,7 @@ const ModernChatBot = () => {
           <BotIcon />
         </div>
         <div className="header-info">
-          <h2>GPT-4 Assistant</h2>
+          <h2>Chat Assistant</h2>
           <p>{isTyping ? 'Thinking...' : 'Online'}</p>
         </div>
         <button onClick={clearChat} className="clear-chat-btn">

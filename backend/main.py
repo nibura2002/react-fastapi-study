@@ -5,7 +5,7 @@ import logging
 from typing import List, Dict, Optional
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
@@ -16,9 +16,9 @@ from mangum import Mangum
 # Configure logging
 logger = logging.getLogger("api")
 logger.setLevel(logging.INFO)
-handler = logging.StreamHandler()
-handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
-logger.addHandler(handler)
+log_handler = logging.StreamHandler()
+log_handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+logger.addHandler(log_handler)
 
 # Load environment variables
 load_dotenv()
@@ -45,6 +45,7 @@ else:
 if not OPENAI_API_KEY:
     logger.error("OPENAI_API_KEY environment variable is not set")
 
+# Create FastAPI app - DO NOT set lifespan for local development
 app = FastAPI()
 
 # Configure CORS - update with your Amplify domain in production
@@ -108,7 +109,8 @@ async def generate_response_stream(messages: List[Message]):
     
     return event_generator()
 
-@app.post("/api/chat")
+@app.post("/chat")
+@app.post("/api/chat")  # Support both paths for flexibility
 async def create_chat_completion(request: ChatRequest):
     """Endpoint for chat completion with streaming"""
     try:
@@ -122,7 +124,8 @@ async def create_chat_completion(request: ChatRequest):
         logger.error(f"Error in chat completion: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/health")
+@app.get("/health")
+@app.get("/api/health")  # Support both paths for flexibility
 def health_check():
     """Health check endpoint"""
     try:
@@ -135,7 +138,29 @@ def health_check():
         logger.error(f"Health check failed: {e}")
         return {"status": "error", "message": str(e)}
 
-# Lambda handler
+# Add a root path handler for debugging
+@app.get("/")
+def root():
+    """Root path for testing"""
+    return {"message": "API is running. Try /health or /api/health for health check."}
+
+# Add a request logger middleware to help debug path issues
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.info(f"Request path: {request.url.path}")
+    try:
+        response = await call_next(request)
+        logger.info(f"Response status: {response.status_code}")
+        return response
+    except Exception as e:
+        logger.error(f"Request failed: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"detail": str(e)},
+        )
+
+# Lambda handler - properly configured for API Gateway
+# Note: We handle the lifespan configuration only in the Mangum handler
 handler = Mangum(app)
 
 if __name__ == "__main__":

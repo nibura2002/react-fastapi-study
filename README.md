@@ -102,7 +102,7 @@ This repository is created for learning web application development. It contains
 
 ---
 
-# AWS Amplify Deployment Guide (by LLM)
+# AWS Amplify Deployment Guide (byLLM)
 
 This guide explains how to deploy the chat application using AWS Amplify and AWS Lambda.
 
@@ -141,51 +141,99 @@ This guide explains how to deploy the chat application using AWS Amplify and AWS
    - Go to App settings > Environment variables
    - Add `REACT_APP_API_URL` pointing to your API Gateway URL (after backend deployment)
 
-## Backend Deployment to AWS Lambda
+## Backend Deployment to AWS Lambda with Poetry
 
-1. **Create the Lambda function**:
+1. **Set up Poetry for dependency management**:
+   - Install Poetry if you haven't already:
+     ```bash
+     curl -sSL https://install.python-poetry.org | python3 -
+     ```
+   - Initialize Poetry in your project:
+     ```bash
+     cd backend
+     poetry init
+     ```
+   - Add required dependencies:
+     ```bash
+     poetry add fastapi uvicorn langchain langchain-openai python-dotenv pydantic mangum boto3
+     ```
+
+2. **Create a pyproject.toml file**:
+   - Poetry will create this file, but ensure it includes your dependencies:
+   ```toml
+   [tool.poetry]
+   name = "chatbot-backend"
+   version = "0.1.0"
+   description = "Chatbot backend with LangChain and OpenAI"
+   authors = ["Your Name <your.email@example.com>"]
+
+   [tool.poetry.dependencies]
+   python = "^3.9"
+   fastapi = "^0.110.0"
+   uvicorn = "^0.28.0"
+   langchain = "^0.1.14"
+   langchain-openai = "^0.0.8"
+   python-dotenv = "^1.0.1"
+   pydantic = "^2.6.1"
+   mangum = "^0.17.0"
+   boto3 = "^1.34.21"
+
+   [build-system]
+   requires = ["poetry-core>=1.0.0"]
+   build-backend = "poetry.core.masonry.api"
+   ```
+
+3. **Create the Lambda function**:
    - Navigate to AWS Lambda
    - Create a new function
    - Choose Python 3.9+ as the runtime
    - Create a new role with basic Lambda permissions
 
-2. **Deploy the code**:
-   - Package the code:
-     ```
+4. **Deploy the code using Poetry**:
+   - Package the code with Poetry:
+     ```bash
+     # Export dependencies to requirements.txt
+     poetry export -f requirements.txt --output requirements.txt --without-hashes
+     
+     # Create a deployment package
+     mkdir -p package
      pip install -r requirements.txt --target ./package
      cp main.py ./package/
      cd package
      zip -r ../deployment-package.zip .
      ```
+   
+   - Alternative approach with Poetry's virtual environment:
+     ```bash
+     # Use Poetry to install dependencies in a virtual environment
+     poetry install
+     
+     # Create a deployment package from the virtual environment
+     mkdir -p package
+     cp main.py package/
+     cp -r $(poetry env info -p)/lib/python*/site-packages/* package/
+     cd package
+     zip -r ../deployment-package.zip .
+     ```
+   
    - Upload the deployment package to Lambda
 
-3. **Add required permissions to Lambda role**:
+5. **Add required permissions to Lambda role**:
    - Add SSM parameter read permissions to access the API key
+   - Go to the Lambda function > Configuration > Permissions
+   - Click on the role name to go to IAM
+   - Attach policy: AmazonSSMReadOnlyAccess or create a custom policy with GetParameter permissions
 
-4. **Configure API Gateway**:
+6. **Configure API Gateway**:
    - Create a new API Gateway (HTTP API)
    - Add routes:
      - POST /api/chat -> Your Lambda function
      - GET /api/health -> Your Lambda function
    - Enable CORS for your Amplify domain
 
-5. **Store secrets**:
+7. **Store secrets**:
    - In AWS Systems Manager Parameter Store:
      - Create a secure string parameter `/chatbot/OPENAI_API_KEY` with your OpenAI API key
-
-## Required Dependencies
-
-**Backend (add to requirements.txt)**:
-```
-fastapi==0.110.0
-uvicorn==0.28.0
-langchain==0.1.14
-langchain-openai==0.0.8
-python-dotenv==1.0.1
-pydantic==2.6.1
-mangum==0.17.0
-boto3==1.34.21
-```
 
 **Special backend package for AWS Lambda**:
 - Mangum: Adapter for running ASGI applications like FastAPI in AWS Lambda

@@ -1,0 +1,16 @@
+FROM public.ecr.aws/lambda/python:3.12
+
+WORKDIR /var/task
+COPY main.py .
+
+# Install dependencies
+RUN pip install --upgrade pip
+RUN pip install fastapi==0.110.0 mangum==0.17.0 pydantic==2.6.1 \
+    langchain==0.1.14 langchain-openai==0.0.8 python-dotenv==1.0.1 boto3==1.34.21
+
+# Create the package
+RUN find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+RUN find . -type d -name "*.dist-info" -exec rm -rf {} + 2>/dev/null || true
+RUN find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
+RUN find . -name "*.pyc" -delete 2>/dev/null || true
+RUN zip -r /tmp/deployment-package.zip .
