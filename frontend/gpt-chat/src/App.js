@@ -179,7 +179,7 @@ const App = () => {
           <p>Please log in to use the chat service.</p>
           <button onClick={() => loginWithRedirect()}>Log In</button>
           <br />
-          <button onClick={() => logout()}>Log Out</button>
+          <button onClick={() => logout({ returnTo: window.location.origin })}>Log Out</button>
         </div>
       ) : (
         <div className="chat-container">
